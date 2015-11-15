@@ -68,3 +68,23 @@ void BlinnPhongMaterial::LoadMaterialFromAssimp(std::shared_ptr<aiMaterial> assi
     }
 
 }
+
+bool BlinnPhongMaterial::HasDiffuseReflection() const
+{
+    return (glm::length2(diffuseColor) > 0 || GetTexture("diffuseTexture"));
+}
+
+bool BlinnPhongMaterial::HasSpecularReflection() const
+{
+    return (glm::length2(specularColor) > 0 || GetTexture("specularTexture") || Material::HasSpecularReflection());
+}
+
+glm::vec3 BlinnPhongMaterial::GetBaseDiffuseReflection() const
+{
+    return diffuseColor;
+}
+
+glm::vec3 BlinnPhongMaterial::GetBaseSpecularReflection() const
+{
+    return glm::max(specularColor, Material::GetBaseSpecularReflection());
+}
