@@ -109,7 +109,6 @@ void PhotonMappingRenderer::TracePhoton(PhotonKdtree& photonMap, Ray* photonRay,
     myPhoton.intensity = lightIntensity;
     Ray toLight;
     toLight.SetRayDirection(-photonRay->GetRayDirection());
-    //toLight.SetRayDirection(photonRay->GetRayDirection());
     toLight.SetRayPosition(intersectionPoint);
     myPhoton.position = intersectionPoint;
     myPhoton.toLightRay = toLight;
