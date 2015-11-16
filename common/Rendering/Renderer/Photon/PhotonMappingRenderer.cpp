@@ -105,12 +105,14 @@ void PhotonMappingRenderer::TracePhoton(PhotonKdtree& photonMap, Ray* photonRay,
     // const glm::vec3 intersectionPoint = state.intersectionRay.GetRayPosition(state.intersectionT);
     
     Photon myPhoton;
-    myPhoton.intensity = lightIntensity;
-    Ray toLight = *photonRay;
-    toLight.SetRayDirection(-photonRay->GetRayDirection());
-    myPhoton.toLightRay = toLight;
     const glm::vec3 intersectionPoint = state.intersectionRay.GetRayPosition(state.intersectionT);
+    myPhoton.intensity = lightIntensity;
+    Ray toLight;
+    toLight.SetRayDirection(-photonRay->GetRayDirection());
+    //toLight.SetRayDirection(photonRay->GetRayDirection());
+    toLight.SetRayPosition(intersectionPoint);
     myPhoton.position = intersectionPoint;
+    myPhoton.toLightRay = toLight;
     if (path.size() > 1) {
         photonMap.insert(myPhoton);
     }
@@ -119,13 +121,14 @@ void PhotonMappingRenderer::TracePhoton(PhotonKdtree& photonMap, Ray* photonRay,
     const MeshObject* hitMeshObject = state.intersectedPrimitive->GetParentMeshObject();
     const Material* hitMaterial = hitMeshObject->GetMaterial();
     glm::vec3 diffuseColor = hitMaterial->GetBaseDiffuseReflection();
+    //std::cout<<glm::to_string(diffuseColor)<<std::endl;
     
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(0, 1);
     
     float pr = dis(gen);
-    if (diffuseColor[0] < pr && diffuseColor[1] < pr && diffuseColor[2] < pr) {
+    if (diffuseColor[0] <= pr && diffuseColor[1] <= pr && diffuseColor[2] <= pr) {
         // Scatter the photon. Otherwise do nothing.
         // To scatter the photon shoot out a ray randomly into the hemisphere above the intersection point.
         // To do this, (1) perform a generic hemisphere sample and (2) transform the ray into world space.
@@ -141,7 +144,7 @@ void PhotonMappingRenderer::TracePhoton(PhotonKdtree& photonMap, Ray* photonRay,
         // TA: This is the last section to figure out. It seems to work better when I get rid of the dot product check.
         glm::vec3 t;
         glm::vec3 n = state.ComputeNormal();
-        if (glm::dot(n, glm::vec3(1.f, 0.f, 0.f)) >= 0.99) {
+        if (glm::dot(n, glm::vec3(1.f, 0.f, 0.f)) >= 0.90) {
             t = glm::cross(n, glm::vec3(0.f, 1.f, 0.f));
         } else {
             t = glm::cross(n, glm::vec3(1.f, 0.f, 0.f));
