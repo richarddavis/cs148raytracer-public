@@ -90,11 +90,11 @@ void PhotonMappingRenderer::TracePhoton(PhotonKdtree& photonMap, Ray* photonRay,
     
     // If there was an intersection decide (1) whether or not to store the photon and (2) whether or not to
     // scatter the photon. For now we deal with (1).
+    //
     // I will only store photons that have bounced around the scene, ignoring those that have come directly
     // from the light. If the path variable only has one element in it, 'L', this means that the photon has
     // come directly from the light. A quick way to test if this is the case is to check the length of the
     // path variable. When the length is 1, don't store the photon.
-    //
     // When the length is greater than 1, create and store a new 'Photon' object in the photon map.
     // The 'Photon' struct has three properties: position, intensity, and toLightRay.
     //
@@ -136,25 +136,30 @@ void PhotonMappingRenderer::TracePhoton(PhotonKdtree& photonMap, Ray* photonRay,
         double x = r * cos(theta);
         double y = r * sin(theta);
         double z = sqrt(1 - u1);
-        
         glm::vec3 scatterDirection = glm::normalize(glm::vec3(x, y, z));
+        
+        // TA: This is the last section to figure out. It seems to work better when I get rid of the dot product check.
         glm::vec3 t;
         glm::vec3 n = state.ComputeNormal();
-        if (glm::dot(n, glm::vec3(1.f, 0.f, 0.f)) > 0.99) {
+        if (glm::dot(n, glm::vec3(1.f, 0.f, 0.f)) >= 0.99) {
             t = glm::cross(n, glm::vec3(0.f, 1.f, 0.f));
         } else {
             t = glm::cross(n, glm::vec3(1.f, 0.f, 0.f));
         }
-        t = glm::cross(n, glm::vec3(1.f, 0.f, 0.f));
+        //t = glm::cross(n, glm::vec3(0.f, 1.f, 0.f));
+        
         glm::vec3 b = glm::cross(n, t);
         
-        glm::vec3 finalDirection = scatterDirection * glm::mat3(t, b, n);
-        photonRay->SetRayDirection(finalDirection);
-        photonRay->SetRayPosition(intersectionPoint);
+        // TA: Not sure about the correct order of multiplication.
+        //glm::vec3 finalDirection = glm::normalize(scatterDirection * glm::mat3(t, b, n));
+        glm::vec3 finalDirection = glm::normalize(glm::mat3(t, b, n) * scatterDirection);
         
-        path.push_back('x');
+        Ray newRay;
+        newRay.SetRayDirection(finalDirection);
+        newRay.SetRayPosition(intersectionPoint + LARGE_EPSILON * n);
+        path.push_back('L');
         remainingBounces -= 1;
-        TracePhoton(photonMap, photonRay, lightIntensity, path, 1.f, remainingBounces);
+        TracePhoton(photonMap, &newRay, lightIntensity, path, currentIOR, remainingBounces);
     }
 }
 
