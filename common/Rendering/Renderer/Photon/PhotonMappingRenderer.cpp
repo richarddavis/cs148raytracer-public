@@ -127,7 +127,7 @@ void PhotonMappingRenderer::TracePhoton(PhotonKdtree& photonMap, Ray* photonRay,
     std::uniform_real_distribution<> dis(0, 1);
     
     float pr = dis(gen);
-    if (diffuseColor[0] <= pr && diffuseColor[1] <= pr && diffuseColor[2] <= pr) {
+    if (diffuseColor[0] < pr || diffuseColor[1] < pr || diffuseColor[2] < pr) {
         // Scatter the photon. Otherwise do nothing.
         // To scatter the photon shoot out a ray randomly into the hemisphere above the intersection point.
         // To do this, (1) perform a generic hemisphere sample and (2) transform the ray into world space.
@@ -143,18 +143,22 @@ void PhotonMappingRenderer::TracePhoton(PhotonKdtree& photonMap, Ray* photonRay,
         // TA: This is the last section to figure out. It seems to work better when I get rid of the dot product check.
         glm::vec3 t;
         glm::vec3 n = state.ComputeNormal();
-        if (glm::dot(n, glm::vec3(1.f, 0.f, 0.f)) >= 0.90) {
-            t = glm::cross(n, glm::vec3(0.f, 1.f, 0.f));
+        glm::vec3 unit1 = glm::vec3(1.f, 0.f, 0.f);
+        glm::vec3 unit2 = glm::vec3(0.f, 1.f, 0.f);
+        if (std::abs(std::abs(glm::dot(n, unit1)) - 1) < 0.1) {
+            t = glm::cross(n, unit2);
         } else {
-            t = glm::cross(n, glm::vec3(1.f, 0.f, 0.f));
+            t = glm::cross(n, unit1);
         }
-        //t = glm::cross(n, glm::vec3(0.f, 1.f, 0.f));
-        
         glm::vec3 b = glm::cross(n, t);
+
+        glm::vec3 tn = glm::normalize(t);
+        glm::vec3 bn = glm::normalize(b);
+        glm::vec3 nn = glm::normalize(n);
         
         // TA: Not sure about the correct order of multiplication.
-        //glm::vec3 finalDirection = glm::normalize(scatterDirection * glm::mat3(t, b, n));
-        glm::vec3 finalDirection = glm::normalize(glm::mat3(t, b, n) * scatterDirection);
+        //glm::vec3 finalDirection = glm::normalize(scatterDirection * glm::mat3(tn, bn, nn));
+        glm::vec3 finalDirection = glm::normalize(glm::mat3(tn, bn, nn) * scatterDirection);
         
         Ray newRay;
         newRay.SetRayDirection(finalDirection);
