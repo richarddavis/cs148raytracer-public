@@ -19,13 +19,15 @@ float PointLight::ComputeLightAttenuation(glm::vec3 origin) const
 void PointLight::GenerateRandomPhotonRay(Ray& ray) const
 {
     // Assignment 7 TODO: Fill in the random point light samples here.
-    float rx = 2;
-    float ry = 2;
-    float rz = 2;
     std::random_device rd;
     std::mt19937 gen(rd());
     std::uniform_real_distribution<> dis(-1, 1);
-    while (pow(rx, 2) + pow(ry, 2) + pow(rz, 2) > 1) {
+    
+    float rx = dis(gen);
+    float ry = dis(gen);
+    float rz = dis(gen);
+
+    while ((pow(rx, 2) + pow(ry, 2) + pow(rz, 2)) > 1) {
         rx = dis(gen);
         ry = dis(gen);
         rz = dis(gen);
@@ -33,6 +35,7 @@ void PointLight::GenerateRandomPhotonRay(Ray& ray) const
     
     const glm::vec3 dirVector = glm::vec3(rx, ry, rz);
     ray.SetRayDirection(glm::normalize(dirVector));
-    glm::vec3 rayPos(ray.GetPosition());
-    ray.SetRayPosition(rayPos);
+    const glm::vec3 lightPosition = glm::vec3(GetPosition());
+    ray.SetRayPosition(lightPosition);
+    //std::cout<<glm::to_string(ray.GetPosition())<<std::endl;
 }
