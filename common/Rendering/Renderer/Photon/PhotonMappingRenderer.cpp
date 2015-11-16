@@ -10,6 +10,7 @@
 #include "common/Scene/Geometry/Mesh/MeshObject.h"
 #include "common/Rendering/Material/Material.h"
 #include "glm/gtx/component_wise.hpp"
+#include <random>
 
 #define VISUALIZE_PHOTON_MAPPING 1
 
@@ -62,18 +63,99 @@ void PhotonMappingRenderer::GenericPhotonMapGeneration(PhotonKdtree& photonMap, 
 
 void PhotonMappingRenderer::TracePhoton(PhotonKdtree& photonMap, Ray* photonRay, glm::vec3 lightIntensity, std::vector<char>& path, float currentIOR, int remainingBounces)
 {
-    /*
-     * Assignment 7 TODO: Trace a photon into the scene and make it bounce.
-     *    
-     *    How to insert a 'Photon' struct into the photon map.
-     *        Photon myPhoton;
-     *        ... set photon properties ...
-     *        photonMap.insert(myPhoton);
-     */
-
     assert(photonRay);
     IntersectionState state(0, 0);
     state.currentIOR = currentIOR;
+
+    // **********************************************************************************************
+    // Start RLD code here.
+    //
+    // Overview of the code
+    // There exists a maximum number of bounces that we consider before killing off the photon.
+    // By default this is set to 1000.
+    // This function has a parameter named remainingBounces. If this number is less than zero,
+    // the function should terminate.
+    if (remainingBounces < 0) {
+        return;
+    }
+    
+    // Part 1. Store the photon when it hits an object in the scene.
+    
+    // This function returns true if there is an intersection and false otherwise.
+    // If the photon does not hit anything simply exit the function.
+    bool hit_something = storedScene->Trace(photonRay, &state);
+    if (hit_something == false) {
+        return;
+    }
+    
+    // If there was an intersection decide (1) whether or not to store the photon and (2) whether or not to
+    // scatter the photon. For now we deal with (1).
+    // I will only store photons that have bounced around the scene, ignoring those that have come directly
+    // from the light. If the path variable only has one element in it, 'L', this means that the photon has
+    // come directly from the light. A quick way to test if this is the case is to check the length of the
+    // path variable. When the length is 1, don't store the photon.
+    //
+    // When the length is greater than 1, create and store a new 'Photon' object in the photon map.
+    // The 'Photon' struct has three properties: position, intensity, and toLightRay.
+    //
+    // The 'intensity' varible should be set to 'lightIntensity' and the 'toLightRay' varible should be set
+    // to a ray that points in the opposite direction of the photon ray.
+    //
+    // You can compute the intersection point using the information stored in the 'IntersectionState' object.
+    // const glm::vec3 intersectionPoint = state.intersectionRay.GetRayPosition(state.intersectionT);
+    
+    Photon myPhoton;
+    myPhoton.intensity = lightIntensity;
+    Ray toLight = *photonRay;
+    toLight.SetRayDirection(-photonRay->GetRayDirection());
+    myPhoton.toLightRay = toLight;
+    const glm::vec3 intersectionPoint = state.intersectionRay.GetRayPosition(state.intersectionT);
+    myPhoton.position = intersectionPoint;
+    if (path.size() > 1) {
+        photonMap.insert(myPhoton);
+    }
+    
+    // Part 2. Decide whether to scatter or absorb the photon
+    const MeshObject* hitMeshObject = state.intersectedPrimitive->GetParentMeshObject();
+    const Material* hitMaterial = hitMeshObject->GetMaterial();
+    glm::vec3 diffuseColor = hitMaterial->GetBaseDiffuseReflection();
+    
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<> dis(0, 1);
+    
+    float pr = dis(gen);
+    if (diffuseColor[0] < pr && diffuseColor[1] < pr && diffuseColor[2] < pr) {
+        // Scatter the photon. Otherwise do nothing.
+        // To scatter the photon shoot out a ray randomly into the hemisphere above the intersection point.
+        // To do this, (1) perform a generic hemisphere sample and (2) transform the ray into world space.
+        double u1 = dis(gen);
+        double u2 = dis(gen);
+        double r = sqrt(u1);
+        double theta = 2 * PI * u2;
+        double x = r * cos(theta);
+        double y = r * sin(theta);
+        double z = sqrt(1 - u1);
+        
+        glm::vec3 scatterDirection = glm::normalize(glm::vec3(x, y, z));
+        glm::vec3 t;
+        glm::vec3 n = state.ComputeNormal();
+        if (glm::dot(n, glm::vec3(1.f, 0.f, 0.f)) > 0.99) {
+            t = glm::cross(n, glm::vec3(0.f, 1.f, 0.f));
+        } else {
+            t = glm::cross(n, glm::vec3(1.f, 0.f, 0.f));
+        }
+        t = glm::cross(n, glm::vec3(1.f, 0.f, 0.f));
+        glm::vec3 b = glm::cross(n, t);
+        
+        glm::vec3 finalDirection = scatterDirection * glm::mat3(t, b, n);
+        photonRay->SetRayDirection(finalDirection);
+        photonRay->SetRayPosition(intersectionPoint);
+        
+        path.push_back('x');
+        remainingBounces -= 1;
+        TracePhoton(photonMap, photonRay, lightIntensity, path, 1.f, remainingBounces);
+    }
 }
 
 glm::vec3 PhotonMappingRenderer::ComputeSampleColor(const struct IntersectionState& intersection, const class Ray& fromCameraRay) const
