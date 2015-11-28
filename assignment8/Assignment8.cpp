@@ -52,7 +52,8 @@ std::shared_ptr<ColorSampler> Assignment8::CreateSampler() const
 
 std::shared_ptr<class Renderer> Assignment8::CreateRenderer(std::shared_ptr<Scene> scene, std::shared_ptr<ColorSampler> sampler) const
 {
-    return std::make_shared<BackwardRenderer>(scene, sampler);
+//    return std::make_shared<BackwardRenderer>(scene, sampler);
+    return std::make_shared<PhotonMappingRenderer>(scene, sampler);
 }
 
 int Assignment8::GetSamplesPerPixel() const

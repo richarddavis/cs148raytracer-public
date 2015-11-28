@@ -140,7 +140,7 @@ void PhotonMappingRenderer::TracePhoton(PhotonKdtree& photonMap, Ray* photonRay,
         double z = sqrt(1 - u1);
         glm::vec3 scatterDirection = glm::normalize(glm::vec3(x, y, z));
         
-        // TA: This is the last section to figure out. It seems to work better when I get rid of the dot product check.
+        // Calculate the tangent, bittangent vectors
         glm::vec3 t;
         glm::vec3 n = state.ComputeNormal();
         glm::vec3 unit1 = glm::vec3(1.f, 0.f, 0.f);
@@ -156,8 +156,7 @@ void PhotonMappingRenderer::TracePhoton(PhotonKdtree& photonMap, Ray* photonRay,
         glm::vec3 bn = glm::normalize(b);
         glm::vec3 nn = glm::normalize(n);
         
-        // TA: Not sure about the correct order of multiplication.
-        //glm::vec3 finalDirection = glm::normalize(scatterDirection * glm::mat3(tn, bn, nn));
+        // Transform the vector using the matrix
         glm::vec3 finalDirection = glm::normalize(glm::mat3(tn, bn, nn) * scatterDirection);
         
         Ray newRay;
@@ -175,13 +174,38 @@ glm::vec3 PhotonMappingRenderer::ComputeSampleColor(const struct IntersectionSta
 #if VISUALIZE_PHOTON_MAPPING
     Photon intersectionVirtualPhoton;
     intersectionVirtualPhoton.position = intersection.intersectionRay.GetRayPosition(intersection.intersectionT);
+    
+    // Find the intersected object
+    const MeshObject* parentObject = intersection.intersectedPrimitive->GetParentMeshObject();
+    assert(parentObject);
+    
+    // Get the material of the intersected object
+    const Material* objectMaterial = parentObject->GetMaterial();
+    assert(objectMaterial);
 
     std::vector<Photon> foundPhotons;
     diffuseMap.find_within_range(intersectionVirtualPhoton, 0.003f, std::back_inserter(foundPhotons));
     if (!foundPhotons.empty()) {
-        finalRenderColor += glm::vec3(1.f, 0.f, 0.f);
+        // The following line of code shows where each photon intersects geometry in the scene
+        // finalRenderColor += glm::vec3(1.f, 0.f, 0.f);
+        
+        // 1. Iterate over all the photons in the foundPhotons vector.
+        for (Photon p : foundPhotons) {
+            //const float lightAttenuation = light->ComputeLightAttenuation(intersectionPoint);
+            
+            // Use the material BRDF to find the response from each photon in the sampling area
+            const glm::vec3 brdfResponse = objectMaterial->ComputeBRDF(intersection, p.intensity, p.toLightRay, fromCameraRay, 1.0f);
+            //p.position;
+            //p.toLightRay;
+            glm::vec3 scaledResponse = brdfResponse * (float)(foundPhotons.size() / (3.1415f * pow(0.003f, 2.f)));
+            std::cout<<glm::to_string(scaledResponse)<<std::endl;
+            finalRenderColor += scaledResponse;
+        }
     }
 #endif
+    std::cout<<"FINAL COMPUTATION!!!"<<std::endl;
+    std::cout<<glm::to_string(finalRenderColor)<<std::endl;
+    std::cout<<""<<std::endl;
     return finalRenderColor;
 }
 

@@ -76,7 +76,7 @@ void Scene::PerformRaySpecularReflection(Ray& outputRay, const Ray& inputRay, co
 void Scene::PerformRayRefraction(Ray& outputRay, const Ray& inputRay, const glm::vec3& intersectionPoint, const float NdR, const IntersectionState& state, float& targetIOR) const
 {
     const glm::vec3 refractionDir = inputRay.RefractRay(state.ComputeNormal(), state.currentIOR, targetIOR);
-    outputRay.SetRayPosition(intersectionPoint + LARGE_EPSILON * state.ComputeNormal());
+    outputRay.SetRayPosition(intersectionPoint + LARGE_EPSILON * refractionDir);
     outputRay.SetRayDirection(refractionDir);
 }
 
