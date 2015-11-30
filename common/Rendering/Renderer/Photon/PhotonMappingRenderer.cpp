@@ -13,11 +13,12 @@
 #include <random>
 
 #define VISUALIZE_PHOTON_MAPPING 0
-#define NUM_PHOTONS 100000
-#define NUM_PHOTON_SAMPLES 16
+#define NUM_PHOTONS 500000
+#define NUM_PHOTON_SAMPLES 8
 #define PHOTON_GATHER_RADIUS 0.02
-#define AVERAGE_PHOTONS 1
+#define AVERAGE_PHOTONS 0
 #define FINAL_GATHERING 1
+#define REFLECT_COLOR 0
 
 PhotonMappingRenderer::PhotonMappingRenderer(std::shared_ptr<class Scene> scene, std::shared_ptr<class ColorSampler> sampler):
     BackwardRenderer(scene, sampler), 
@@ -34,8 +35,7 @@ void PhotonMappingRenderer::InitializeRenderer()
     diffuseMap.optimise();
 }
 
-void PhotonMappingRenderer::GenericPhotonMapGeneration(PhotonKdtree& photonMap, int totalPhotons)
-{
+float PhotonMappingRenderer::GetTotalLightIntensity() {
     float totalLightIntensity = 0.f;
     size_t totalLights = storedScene->GetTotalLights();
     for (size_t i = 0; i < totalLights; ++i) {
@@ -43,8 +43,15 @@ void PhotonMappingRenderer::GenericPhotonMapGeneration(PhotonKdtree& photonMap, 
         if (!currentLight) {
             continue;
         }
-        totalLightIntensity = glm::length(currentLight->GetLightColor());
+        totalLightIntensity += glm::length(currentLight->GetLightColor());
     }
+    return totalLightIntensity;
+}
+
+void PhotonMappingRenderer::GenericPhotonMapGeneration(PhotonKdtree& photonMap, int totalPhotons)
+{
+    float totalLightIntensity = GetTotalLightIntensity();
+    size_t totalLights = storedScene->GetTotalLights();
 
     // Shoot photons -- number of photons for light is proportional to the light's intensity relative to the total light intensity of the scene.
     for (size_t i = 0; i < totalLights; ++i) {
@@ -52,10 +59,10 @@ void PhotonMappingRenderer::GenericPhotonMapGeneration(PhotonKdtree& photonMap, 
         if (!currentLight) {
             continue;
         }
-
         const float proportion = glm::length(currentLight->GetLightColor()) / totalLightIntensity;
         const int totalPhotonsForLight = static_cast<const int>(proportion * totalPhotons);
         const glm::vec3 photonIntensity = currentLight->GetLightColor() / static_cast<float>(totalPhotonsForLight);
+        std::cout<<glm::to_string(photonIntensity)<<std::endl;
         for (int j = 0; j < totalPhotonsForLight; ++j) {
             Ray photonRay;
             std::vector<char> path;
@@ -136,18 +143,27 @@ void PhotonMappingRenderer::TracePhoton(PhotonKdtree& photonMap, Ray* photonRay,
         Ray newRay = GenerateRandomRay(state, intersectionPoint);
         path.push_back('L');
         remainingBounces -= 1;
+#if REFLECT_COLOR == 0
         TracePhoton(photonMap, &newRay, lightIntensity, path, currentIOR, remainingBounces);
+#else
+        // Changed lightIntensity to diffuseColor
+        float totalLightIntensity = GetTotalLightIntensity();
+        const float proportion = glm::length(diffuseColor) / totalLightIntensity;
+        const int totalPhotonsForLight = static_cast<const int>(proportion * diffusePhotonNumber);
+        const glm::vec3 photonIntensity = diffuseColor / static_cast<float>(totalPhotonsForLight);
+        TracePhoton(photonMap, &newRay, photonIntensity, path, currentIOR, remainingBounces);
+#endif
     }
 }
 
 glm::vec3 PhotonMappingRenderer::ComputeSampleColor(const struct IntersectionState& intersection, const class Ray& fromCameraRay) const
 {
     glm::vec3 finalRenderColor = BackwardRenderer::ComputeSampleColor(intersection, fromCameraRay);
-    glm::vec3 interimRenderColor = glm::vec3(0.f, 0.f, 0.f);
     
+#if FINAL_GATHERING == 1
+    glm::vec3 interimRenderColor = glm::vec3(0.f, 0.f, 0.f);
     // 1. Find the intersection point P in the scene. This is passed into this function as intersection.
     // 2. Send out N rays F_i into the hemisphere above P. These are called final gather rays.
-    // I have already implemented code very similar to this in TracePhoton.
     for (int i=0; i < NUM_PHOTON_SAMPLES; i++) {
         glm::vec3 intersectionPoint = intersection.intersectionRay.GetRayPosition(intersection.intersectionT);
         Ray randomDirection = GenerateRandomRay(intersection, intersectionPoint);
@@ -164,7 +180,7 @@ glm::vec3 PhotonMappingRenderer::ComputeSampleColor(const struct IntersectionSta
     
         // 4. Compute the color using the BRDF at P-hat using each of the photons as a mini light source. This
         // will give some color C_i.
-        glm::vec3 finalColor = ComputePhotonColor(state, randomDirection, interimRenderColor);
+        glm::vec3 pColor = ComputePhotonColor(state, randomDirection);
 
         // 5. Back at P, treat each of the C_i's as a light source where the vector from P to P-hat is the vector
         // to the light ray.
@@ -175,13 +191,34 @@ glm::vec3 PhotonMappingRenderer::ComputeSampleColor(const struct IntersectionSta
         const Material* objectMaterial = parentObject->GetMaterial();
         assert(objectMaterial);
         
-        const glm::vec3 brdfResponse = objectMaterial->ComputeBRDF(intersection, finalColor, randomDirection, fromCameraRay, 1.0f);
+        Ray lightRay = randomDirection;
+        lightRay.SetRayDirection(randomDirection.GetRayDirection());
+        lightRay.SetRayPosition(state.intersectionRay.GetRayPosition(state.intersectionT));
+                                
+//        std::cout<<"--------"<<std::endl;
+//        std::cout<<glm::to_string(randomDirection.GetRayDirection())<<std::endl;
+//        std::cout<<glm::to_string(-randomDirection.GetRayDirection())<<std::endl;
+//        std::cout<<"--------"<<std::endl;
+        
+        const glm::vec3 brdfResponse = objectMaterial->ComputeBRDF(intersection, pColor, lightRay, fromCameraRay, 1.0f);
         interimRenderColor += brdfResponse;
     }
 #if AVERAGE_PHOTONS == 1
     finalRenderColor += (interimRenderColor / (float) NUM_PHOTON_SAMPLES);
 #else
     finalRenderColor += interimRenderColor;
+#endif
+#else
+    // Not using final gathering
+    // 1. Find the intersection point P in the scene. This is passed into this function as intersection.
+    // 2. Find all the photons within a given radius of the intersection.
+    // 3. Treat each of these photons as a small light. The light has some color and direction. Use these
+    // values to compute the BRDF at the intersection pont.
+    // 4. Multiply each BRDF by (num_photons / area).
+    // 5. Sum everything and add it to the direct light.
+    
+    // 1, 2, 3, 4, 5.
+    finalRenderColor += ComputePhotonColor(intersection, fromCameraRay);
 #endif
 
     
@@ -192,13 +229,9 @@ glm::vec3 PhotonMappingRenderer::ComputeSampleColor(const struct IntersectionSta
     // Find the intersected object
     const MeshObject* parentObject = intersection.intersectedPrimitive->GetParentMeshObject();
     assert(parentObject);
-    
-    // Get the material of the intersected object
-    const Material* objectMaterial = parentObject->GetMaterial();
-    assert(objectMaterial);
 
     std::vector<Photon> foundPhotons;
-    diffuseMap.find_within_range(intersectionVirtualPhoton, PHOTON_GATHER_RADIUS, std::back_inserter(foundPhotons));
+    diffuseMap.find_within_range(intersectionVirtualPhoton, 0.003f, std::back_inserter(foundPhotons));
     if (!foundPhotons.empty()) {
         // The following line of code shows where each photon intersects geometry in the scene
         finalRenderColor += glm::vec3(1.f, 0.f, 0.f);
@@ -252,7 +285,9 @@ Ray PhotonMappingRenderer::GenerateRandomRay(IntersectionState state, glm::vec3 
     return newRay;
 }
 
-glm::vec3 PhotonMappingRenderer::ComputePhotonColor(IntersectionState intersection, Ray fromCameraRay, glm::vec3 finalRenderColor) const {
+glm::vec3 PhotonMappingRenderer::ComputePhotonColor(IntersectionState intersection, Ray fromCameraRay) const {
+    
+    glm::vec3 integratedColor = glm::vec3(0.f, 0.f, 0.f);
     
     Photon intersectionVirtualPhoton;
     intersectionVirtualPhoton.position = intersection.intersectionRay.GetRayPosition(intersection.intersectionT);
@@ -272,11 +307,12 @@ glm::vec3 PhotonMappingRenderer::ComputePhotonColor(IntersectionState intersecti
         for (Photon p : foundPhotons) {
             //const float lightAttenuation = light->ComputeLightAttenuation(intersectionPoint);
             // Use the material BRDF to find the response from each photon in the sampling area
+            //std::cout<<glm::to_string(p.intensity)<<std::endl;
             const glm::vec3 brdfResponse = objectMaterial->ComputeBRDF(intersection, p.intensity, p.toLightRay, fromCameraRay, 1.0f);
             glm::vec3 scaledResponse = brdfResponse * (float)(foundPhotons.size() / (3.1415f * pow(PHOTON_GATHER_RADIUS, 2.f)));
             //std::cout<<glm::to_string(scaledResponse)<<std::endl;
-            finalRenderColor += scaledResponse;
+            integratedColor += scaledResponse;
         }
     }
-    return finalRenderColor;
+    return integratedColor;
 }
