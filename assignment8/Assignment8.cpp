@@ -51,6 +51,8 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
     pointLight->SetPosition(glm::vec3(0.01909f, 0.0101f, 1.97028f));
     pointLight->SetLightColor(glm::vec3(1.f, 1.f, 1.f));
     
+    // -------------------------------
+    // Copied from previous assignment
 #define ACCELERATION_TYPE 1
 #if ACCELERATION_TYPE == 0
     newScene->GenerateAccelerationData(AccelerationTypes::NONE);
@@ -62,7 +64,7 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
     // Change the glm::ivec3(10, 10, 10) here.
     accelerator->SetSuggestedGridSize(glm::ivec3(3, 3, 3));
 #endif
-    
+    // -------------------------------
     newScene->AddLight(pointLight);
 
     return newScene;
@@ -72,14 +74,14 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
 std::shared_ptr<ColorSampler> Assignment8::CreateSampler() const
 {
     std::shared_ptr<JitterColorSampler> jitter = std::make_shared<JitterColorSampler>();
-    //jitter->SetGridSize(glm::ivec3(1, 1, 1));
-    jitter->SetGridSize(glm::ivec3(4, 4, 1));
+    //jitter->SetGridSize(glm::ivec3(4, 4, 1));
+    jitter->SetGridSize(glm::ivec3(1, 1, 1));
     
     std::shared_ptr<SimpleAdaptiveSampler> sampler = std::make_shared<SimpleAdaptiveSampler>();
     sampler->SetInternalSampler(jitter);
     
     // Change the '1.f' in '1.f * SMALL_EPSILON' here to be higher and see what your results are.
-    sampler->SetEarlyExitParameters(SMALL_EPSILON, 16);
+    sampler->SetEarlyExitParameters(1.f * SMALL_EPSILON, 16);
     //return sampler;
     
     // Comment out 'return jitter;' to use the adaptive sampler.

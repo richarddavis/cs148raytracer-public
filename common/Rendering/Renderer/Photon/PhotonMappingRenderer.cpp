@@ -18,7 +18,7 @@
 #define PHOTON_GATHER_RADIUS 0.05
 #define REFLECT_COLOR 0
 #define FINAL_GATHERING 1
-#define GATHER_RAYS 16
+#define GATHER_RAYS 64
 #define CONE_FILTER 0
 #define CONE_CONSTANT 1.5
 #define BRIGHTNESS_HACK 30
@@ -227,10 +227,6 @@ glm::vec3 PhotonMappingRenderer::ComputeSampleColor(const struct IntersectionSta
 #if VISUALIZE_PHOTON_MAPPING
     Photon intersectionVirtualPhoton;
     intersectionVirtualPhoton.position = intersection.intersectionRay.GetRayPosition(intersection.intersectionT);
-    
-    // Find the intersected object
-    const MeshObject* parentObject = intersection.intersectedPrimitive->GetParentMeshObject();
-    assert(parentObject);
 
     std::vector<Photon> foundPhotons;
     diffuseMap.find_within_range(intersectionVirtualPhoton, 0.003f, std::back_inserter(foundPhotons));
