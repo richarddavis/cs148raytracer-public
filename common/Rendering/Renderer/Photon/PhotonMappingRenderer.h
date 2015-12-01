@@ -25,6 +25,6 @@ private:
     void GenericPhotonMapGeneration(PhotonKdtree& photonMap, int totalPhotons);
     void TracePhoton(PhotonKdtree& photonMap, Ray* photonRay, glm::vec3 lightIntensity, std::vector<char>& path, float currentIOR, int remainingBounces);
     float GetTotalLightIntensity();
-    Ray GenerateRandomRay(IntersectionState state, glm::vec3 point) const ;
+    Ray GenerateRandomRay(IntersectionState state) const ;
     glm::vec3 ComputePhotonColor(IntersectionState state, Ray fromCameraRay) const ;
 };

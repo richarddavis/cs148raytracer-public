@@ -1,6 +1,9 @@
 #include "assignment8/Assignment8.h"
 #include "common/core.h"
 
+#define GLASS 0
+#define NUM_BOUNCES 0
+
 std::shared_ptr<Camera> Assignment8::CreateCamera() const
 {
     const glm::vec2 resolution = GetImageOutputResolution();
@@ -26,11 +29,13 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
         std::shared_ptr<Material> materialCopy = cubeMaterial->Clone();
         materialCopy->LoadMaterialFromAssimp(loadedMaterials[i]);
         
+#if GLASS == 1
         if (i == 5 || i == 6) {
             materialCopy->SetTransmittance(0.77);
             materialCopy->SetIOR(1.52);
             materialCopy->SetReflectivity(0.07);
         }
+#endif
         
         cubeObjects[i]->SetMaterial(materialCopy);
     }
@@ -101,12 +106,12 @@ bool Assignment8::NotifyNewPixelSample(glm::vec3 inputSampleColor, int sampleInd
 
 int Assignment8::GetMaxReflectionBounces() const
 {
-    return 3;
+    return NUM_BOUNCES;
 }
 
 int Assignment8::GetMaxRefractionBounces() const
 {
-    return 3;
+    return NUM_BOUNCES;
 }
 
 glm::vec2 Assignment8::GetImageOutputResolution() const
