@@ -12,16 +12,7 @@
 #include "glm/gtx/component_wise.hpp"
 #include <random>
 
-#define DIRECT_LIGHTING 1
-#define VISUALIZE_PHOTON_MAPPING 0
-#define NUM_PHOTONS 100000
-#define PHOTON_GATHER_RADIUS 0.05
-#define REFLECT_COLOR 0
-#define FINAL_GATHERING 1
-#define GATHER_RAYS 128
-#define CONE_FILTER 1
-#define CONE_CONSTANT 2
-#define BRIGHTNESS_HACK 50
+#include "common/globalParams.h"
 
 PhotonMappingRenderer::PhotonMappingRenderer(std::shared_ptr<class Scene> scene, std::shared_ptr<class ColorSampler> sampler):
     BackwardRenderer(scene, sampler), 
@@ -127,7 +118,11 @@ void PhotonMappingRenderer::TracePhoton(PhotonKdtree& photonMap, Ray* photonRay,
     toLight.SetRayPosition(intersectionPoint);
     myPhoton.position = intersectionPoint;
     myPhoton.toLightRay = toLight;
-    if (path.size() > 1) {
+#if FIRST_BOUNCE == 1
+    if (path.size() >=  1) {
+#elif FIRST_BOUNCE == 0
+    if (path.size() >  1) {
+#endif
         photonMap.insert(myPhoton);
     }
     
@@ -181,6 +176,9 @@ glm::vec3 PhotonMappingRenderer::ComputeSampleColor(const struct IntersectionSta
         IntersectionState state(0, 0);
         bool hit_something = storedScene->Trace(&randomDirection, &state);
         if (hit_something == false) {
+#if RESAMPLE_MISSED_GATHER_RAYS == 1
+            i--;
+#endif
             continue;
         }
     

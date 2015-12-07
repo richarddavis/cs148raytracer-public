@@ -11,6 +11,7 @@ public:
 
     virtual glm::vec3 GetLightColor() const;
     void SetLightColor(glm::vec3 input);
+    void ContinueSampleRay(Ray& output, glm::vec3 origin, float oldT) const;
 
     // Photon Mapping Utility Functions
     virtual void GenerateRandomPhotonRay(Ray& ray) const = 0;

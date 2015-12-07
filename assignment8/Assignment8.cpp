@@ -1,15 +1,16 @@
 #include "assignment8/Assignment8.h"
 #include "common/core.h"
 
-#define GLASS 0
-#define NUM_BOUNCES 0
+#include "common/globalParams.h"
 
 std::shared_ptr<Camera> Assignment8::CreateCamera() const
 {
     const glm::vec2 resolution = GetImageOutputResolution();
     std::shared_ptr<Camera> camera = std::make_shared<PerspectiveCamera>(resolution.x / resolution.y, 26.6f);
-    camera->SetPosition(glm::vec3(0.f, -4.1469f, 0.73693f));
+    //Position is given by (left-right, front-back, top-bottom)
+    camera->SetPosition(glm::vec3(0.f, -4.5f, 1.93693f));
     camera->Rotate(glm::vec3(1.f, 0.f, 0.f), PI / 2.f);
+    camera->Rotate(glm::vec3(1.f, 0.f, 0.f), -13.f * PI / 180.f);
     return camera;
 }
 
@@ -24,19 +25,19 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
 
     // Objects
     std::vector<std::shared_ptr<aiMaterial>> loadedMaterials;
-    std::vector<std::shared_ptr<MeshObject>> cubeObjects = MeshLoader::LoadMesh("CornellBox/CornellBox-Assignment8.obj", &loadedMaterials);
+    std::vector<std::shared_ptr<MeshObject>> cubeObjects = MeshLoader::LoadMesh("final_scene/cornell_empty.obj", &loadedMaterials);
+    std::cout<<cubeObjects.size()<<std::endl;
     for (size_t i = 0; i < cubeObjects.size(); ++i) {
         std::shared_ptr<Material> materialCopy = cubeMaterial->Clone();
         materialCopy->LoadMaterialFromAssimp(loadedMaterials[i]);
-        
-#if GLASS == 1
-        if (i == 5 || i == 6) {
+#if MATERIAL_HACK == 1
+        if (i > 20 || i < 3) {
             materialCopy->SetTransmittance(0.77);
-            materialCopy->SetIOR(1.52);
+            materialCopy->SetIOR(1.7);
             materialCopy->SetReflectivity(0.07);
         }
 #endif
-        
+        materialCopy->SetAmbient(glm::vec3(0.f, 0.f, 0.f));
         cubeObjects[i]->SetMaterial(materialCopy);
     }
 
@@ -48,9 +49,26 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
 
     // Lights
     std::shared_ptr<PointLight> pointLight = std::make_shared<PointLight>();
-    pointLight->SetPosition(glm::vec3(0.01909f, 0.0101f, 1.97028f));
+    //pointLight->SetPosition(glm::vec3(0.01909f, 0.0101f, 1.97028f));
+    pointLight->SetPosition(glm::vec3(0.02f, 0.1f, 1.9f)); // Slightly change to light positions
     pointLight->SetLightColor(glm::vec3(1.f, 1.f, 1.f));
     
+    std::shared_ptr<PointLight> pointLight2 = std::make_shared<PointLight>();
+    pointLight2->SetPosition(glm::vec3(-0.2f, -1.6f, 1.f)); // Slightly change to light positions
+    pointLight2->SetLightColor(glm::vec3(1.f, 1.f, 1.f));
+    
+    std::shared_ptr<AreaLight> areaLight = std::make_shared<AreaLight>(glm::vec2(5.f,5.f));
+    // sceneObject->Rotate(glm::vec3(SceneObject::GetWorldUp()), -0.1f);
+    // Position:
+    // left-right,
+    // in-out,
+    // up-down
+    areaLight->SetPosition(glm::vec3(2.5f, -.9f, 3.17f));
+        areaLight->Rotate(glm::vec3(1.f, 0.f, 0.f), PI / 2.f);
+    areaLight->Rotate(glm::vec3(0.f, 0.f, 1.f), PI / -20.f);
+    areaLight->SetLightColor(glm::vec3(1.f, 1.0f, 1.0f));
+    areaLight->SetSamplerAttributes(glm::ivec3(50.f, 50.f, 1.f), 4);
+
     // -------------------------------
     // Copied from previous assignment
 #define ACCELERATION_TYPE 1
@@ -65,7 +83,9 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
     accelerator->SetSuggestedGridSize(glm::ivec3(3, 3, 3));
 #endif
     // -------------------------------
-    newScene->AddLight(pointLight);
+    //newScene->AddLight(pointLight);
+    //newScene->AddLight(pointLight2);
+    newScene->AddLight(areaLight);
 
     return newScene;
 
@@ -82,23 +102,26 @@ std::shared_ptr<ColorSampler> Assignment8::CreateSampler() const
     
     // Change the '1.f' in '1.f * SMALL_EPSILON' here to be higher and see what your results are.
     sampler->SetEarlyExitParameters(1.f * SMALL_EPSILON, 16);
-    //return sampler;
     
     // Comment out 'return jitter;' to use the adaptive sampler.
     jitter->SetGridSize(glm::ivec3(1, 1, 1));
     return jitter;
+    //return sampler;
 }
 
 std::shared_ptr<class Renderer> Assignment8::CreateRenderer(std::shared_ptr<Scene> scene, std::shared_ptr<ColorSampler> sampler) const
 {
-//    return std::make_shared<BackwardRenderer>(scene, sampler);
+#if PHOTON_MAPPING == 0
+    return std::make_shared<BackwardRenderer>(scene, sampler);
+#else
     return std::make_shared<PhotonMappingRenderer>(scene, sampler);
+#endif
 }
 
 int Assignment8::GetSamplesPerPixel() const
 {
     // ASSIGNMENT 5 TODO: Change the '1' here to increase the maximum number of samples used per pixel. (Part 1).
-    return 1;
+    return SAMPLES_PER_PIXEL;
 }
 
 bool Assignment8::NotifyNewPixelSample(glm::vec3 inputSampleColor, int sampleIndex)
@@ -118,5 +141,6 @@ int Assignment8::GetMaxRefractionBounces() const
 
 glm::vec2 Assignment8::GetImageOutputResolution() const
 {
+//    return glm::vec2(960.f, 720.f);
     return glm::vec2(640.f, 480.f);
 }

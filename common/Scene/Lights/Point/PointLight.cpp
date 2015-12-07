@@ -36,8 +36,5 @@ void PointLight::GenerateRandomPhotonRay(Ray& ray) const
     const glm::vec3 dirVector = glm::vec3(rx, ry, rz);
     ray.SetRayDirection(glm::normalize(dirVector));
     const glm::vec3 lightPosition = glm::vec3(GetPosition());
-    //0.01909f, 0.0101f, 1.77640f
-    //const glm::vec3 lightPosition = glm::vec3(0.f, 3.f, 1.77640f);
     ray.SetRayPosition(lightPosition);
-    //std::cout<<glm::to_string(ray.GetPosition())<<std::endl;
 }
