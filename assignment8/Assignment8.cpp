@@ -77,10 +77,14 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
     //areaLight->Rotate(glm::vec3(1.f, 0.f, 0.f), 90 * (PI / 180.f));
     //areaLight->Rotate(glm::vec3(0.f, 0.f, 1.f), 65 * (PI / 180.f));
     areaLight->SetLightColor(glm::vec3(1.f, 1.0f, 1.0f));
-    areaLight->SetSamplerAttributes(glm::ivec3(1.f, 1.f, 1.f), AREA_SAMPLES);
+    areaLight->SetSamplerAttributes(glm::ivec3(1.f, 1.f, 1.f), AREA_LIGHT_SAMPLES);
+    
+    //newScene->AddLight(pointLight);
+    //newScene->AddLight(pointLight2);
+    newScene->AddLight(areaLight);
 
     // -------------------------------
-    // Copied from previous assignment
+    // Change the type of acceleration.
 #if ACCELERATION_TYPE == 0
     newScene->GenerateAccelerationData(AccelerationTypes::NONE);
 #elif ACCELERATION_TYPE == 1
@@ -89,12 +93,9 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
     UniformGridAcceleration* accelerator = dynamic_cast<UniformGridAcceleration*>(newScene->GenerateAccelerationData(AccelerationTypes::UNIFORM_GRID));
     assert(accelerator);
     // Change the glm::ivec3(10, 10, 10) here.
-    accelerator->SetSuggestedGridSize(glm::ivec3(10, 10, 10));
+    accelerator->SetSuggestedGridSize(glm::ivec3(3, 3, 3));
 #endif
     // -------------------------------
-    //newScene->AddLight(pointLight);
-    //newScene->AddLight(pointLight2);
-    newScene->AddLight(areaLight);
 
     return newScene;
 
