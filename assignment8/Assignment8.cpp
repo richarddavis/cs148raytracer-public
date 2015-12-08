@@ -39,13 +39,26 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
 #endif
         materialCopy->SetAmbient(glm::vec3(0.f, 0.f, 0.f));
         cubeObjects[i]->SetMaterial(materialCopy);
-    }
 
-    std::shared_ptr<SceneObject> cubeSceneObject = std::make_shared<SceneObject>();
-    cubeSceneObject->AddMeshObject(cubeObjects);
-    cubeSceneObject->Rotate(glm::vec3(1.f, 0.f, 0.f), PI / 2.f);
-    cubeSceneObject->CreateAccelerationData(AccelerationTypes::BVH);
-    newScene->AddSceneObject(cubeSceneObject);
+        std::shared_ptr<SceneObject> cubeSceneObject = std::make_shared<SceneObject>();
+        cubeSceneObject->AddMeshObject(cubeObjects[i]);
+        cubeSceneObject->Rotate(glm::vec3(1.f, 0.f, 0.f), PI / 2.f);
+        cubeSceneObject->CreateAccelerationData(AccelerationTypes::BVH);
+    
+        cubeSceneObject->ConfigureAccelerationStructure([](AccelerationStructure* genericAccelerator) {
+            BVHAcceleration* accelerator = dynamic_cast<BVHAcceleration*>(genericAccelerator);
+            accelerator->SetMaximumChildren(2);
+            accelerator->SetNodesOnLeaves(2);
+        });
+    
+        cubeSceneObject->ConfigureChildMeshAccelerationStructure([](AccelerationStructure* genericAccelerator) {
+            BVHAcceleration* accelerator = dynamic_cast<BVHAcceleration*>(genericAccelerator);
+            accelerator->SetMaximumChildren(2);
+            accelerator->SetNodesOnLeaves(2);
+        });
+    
+        newScene->AddSceneObject(cubeSceneObject);
+    }
 
     // Lights
     std::shared_ptr<PointLight> pointLight = std::make_shared<PointLight>();
@@ -57,21 +70,17 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
     pointLight2->SetPosition(glm::vec3(-0.2f, -1.6f, 1.f)); // Slightly change to light positions
     pointLight2->SetLightColor(glm::vec3(1.f, 1.f, 1.f));
     
-    std::shared_ptr<AreaLight> areaLight = std::make_shared<AreaLight>(glm::vec2(5.f,5.f));
-    // sceneObject->Rotate(glm::vec3(SceneObject::GetWorldUp()), -0.1f);
-    // Position:
-    // left-right,
-    // in-out,
-    // up-down
-    areaLight->SetPosition(glm::vec3(2.5f, -.9f, 3.17f));
-        areaLight->Rotate(glm::vec3(1.f, 0.f, 0.f), PI / 2.f);
-    areaLight->Rotate(glm::vec3(0.f, 0.f, 1.f), PI / -20.f);
+    std::shared_ptr<AreaLight> areaLight = std::make_shared<AreaLight>(glm::vec2(1.f,1.f));
+    // Keep the area light size at 1, 1 and the sampler attributes at 1, 1. Then any settings in Blender
+    // will apply here.
+    areaLight->SetPosition(glm::vec3(0.f, 0.f, 1.95f));
+    //areaLight->Rotate(glm::vec3(1.f, 0.f, 0.f), 90 * (PI / 180.f));
+    //areaLight->Rotate(glm::vec3(0.f, 0.f, 1.f), 65 * (PI / 180.f));
     areaLight->SetLightColor(glm::vec3(1.f, 1.0f, 1.0f));
-    areaLight->SetSamplerAttributes(glm::ivec3(50.f, 50.f, 1.f), 4);
+    areaLight->SetSamplerAttributes(glm::ivec3(1.f, 1.f, 1.f), AREA_SAMPLES);
 
     // -------------------------------
     // Copied from previous assignment
-#define ACCELERATION_TYPE 1
 #if ACCELERATION_TYPE == 0
     newScene->GenerateAccelerationData(AccelerationTypes::NONE);
 #elif ACCELERATION_TYPE == 1
@@ -80,7 +89,7 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
     UniformGridAcceleration* accelerator = dynamic_cast<UniformGridAcceleration*>(newScene->GenerateAccelerationData(AccelerationTypes::UNIFORM_GRID));
     assert(accelerator);
     // Change the glm::ivec3(10, 10, 10) here.
-    accelerator->SetSuggestedGridSize(glm::ivec3(3, 3, 3));
+    accelerator->SetSuggestedGridSize(glm::ivec3(10, 10, 10));
 #endif
     // -------------------------------
     //newScene->AddLight(pointLight);
@@ -93,20 +102,28 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
 
 std::shared_ptr<ColorSampler> Assignment8::CreateSampler() const
 {
+#if ANTI_ALIAS == 1
     std::shared_ptr<JitterColorSampler> jitter = std::make_shared<JitterColorSampler>();
-    //jitter->SetGridSize(glm::ivec3(4, 4, 1));
-    jitter->SetGridSize(glm::ivec3(1, 1, 1));
+    
+    // The higher the grid size, the better the anti-aliasing but the slower it goes.
+    jitter->SetGridSize(glm::ivec3(4, 4, 1));
     
     std::shared_ptr<SimpleAdaptiveSampler> sampler = std::make_shared<SimpleAdaptiveSampler>();
     sampler->SetInternalSampler(jitter);
     
     // Change the '1.f' in '1.f * SMALL_EPSILON' here to be higher and see what your results are.
-    sampler->SetEarlyExitParameters(1.f * SMALL_EPSILON, 16);
+    // Increasing the multiplier should speed up execution. We were encouraged to try values of
+    // 10.f and 100.f.
+    sampler->SetEarlyExitParameters(2.f * SMALL_EPSILON, 4);
     
     // Comment out 'return jitter;' to use the adaptive sampler.
+    return sampler;
+#else
+    // This is how the code was given to us:
+    std::shared_ptr<JitterColorSampler> jitter = std::make_shared<JitterColorSampler>();
     jitter->SetGridSize(glm::ivec3(1, 1, 1));
     return jitter;
-    //return sampler;
+#endif
 }
 
 std::shared_ptr<class Renderer> Assignment8::CreateRenderer(std::shared_ptr<Scene> scene, std::shared_ptr<ColorSampler> sampler) const
