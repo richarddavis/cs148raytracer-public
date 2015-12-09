@@ -96,7 +96,7 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
     UniformGridAcceleration* accelerator = dynamic_cast<UniformGridAcceleration*>(newScene->GenerateAccelerationData(AccelerationTypes::UNIFORM_GRID));
     assert(accelerator);
     // Change the glm::ivec3(10, 10, 10) here.
-    accelerator->SetSuggestedGridSize(glm::ivec3(20, 20, 20));
+    accelerator->SetSuggestedGridSize(glm::ivec3(5, 5, 5));
 #endif
     // -------------------------------
 
