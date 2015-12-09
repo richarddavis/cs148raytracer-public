@@ -1,5 +1,8 @@
 #include "common/Scene/Lights/Point/PointLight.h"
+<<<<<<< HEAD
 #include <random>
+=======
+>>>>>>> 2db66ce2e9980f4f977d6a0f7addce4337aefded
 
 
 void PointLight::ComputeSampleRays(std::vector<Ray>& output, glm::vec3 origin, glm::vec3 normal) const
