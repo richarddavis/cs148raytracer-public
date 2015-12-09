@@ -10,17 +10,18 @@
 #define globalParams_h
 
 // General settings
-#define SAMPLES_PER_PIXEL 64
+#define SAMPLES_PER_PIXEL 1
 #define ACCELERATION_TYPE 2
 #define ANTI_ALIAS 1
 #define PHOTON_MAPPING 0
-#define NUM_BOUNCES 5
+#define NUM_REFLECTION_BOUNCES 5
+#define NUM_REFRACTION_BOUNCES 5
 #define AREA_LIGHT 0
-#define AREA_LIGHT_SAMPLES 3
-#define MATERIAL_HACK 0
+#define AREA_LIGHT_SAMPLES 1
+#define MATERIAL_HACK 1
 
 // Settings for the Ray Tracer
-#define TRANSPARENT_SHADOWS 1
+#define TRANSPARENT_SHADOWS 0
 #define MAX_TRANSMIT 5.f
 
 // Settings for the Photon Mapper

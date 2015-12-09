@@ -31,10 +31,11 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
         std::shared_ptr<Material> materialCopy = cubeMaterial->Clone();
         materialCopy->LoadMaterialFromAssimp(loadedMaterials[i]);
 #if MATERIAL_HACK == 1
-        if (i > 20 || i < 3) {
-            materialCopy->SetTransmittance(0.77);
-            materialCopy->SetIOR(1.7);
-            materialCopy->SetReflectivity(0.07);
+        // Make sure to use the index in the obj file, not the mtl file
+        if (i == 2) {
+            materialCopy->SetTransmittance(0.3f);
+            materialCopy->SetIOR(1.0f);
+            materialCopy->SetReflectivity(0.2f);
         }
 #endif
         materialCopy->SetAmbient(glm::vec3(0.f, 0.f, 0.f));
@@ -95,7 +96,7 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
     UniformGridAcceleration* accelerator = dynamic_cast<UniformGridAcceleration*>(newScene->GenerateAccelerationData(AccelerationTypes::UNIFORM_GRID));
     assert(accelerator);
     // Change the glm::ivec3(10, 10, 10) here.
-    accelerator->SetSuggestedGridSize(glm::ivec3(3, 3, 3));
+    accelerator->SetSuggestedGridSize(glm::ivec3(20, 20, 20));
 #endif
     // -------------------------------
 
@@ -151,12 +152,12 @@ bool Assignment8::NotifyNewPixelSample(glm::vec3 inputSampleColor, int sampleInd
 
 int Assignment8::GetMaxReflectionBounces() const
 {
-    return NUM_BOUNCES;
+    return NUM_REFLECTION_BOUNCES;
 }
 
 int Assignment8::GetMaxRefractionBounces() const
 {
-    return NUM_BOUNCES;
+    return NUM_REFRACTION_BOUNCES;
 }
 
 glm::vec2 Assignment8::GetImageOutputResolution() const
