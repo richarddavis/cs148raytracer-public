@@ -6,11 +6,11 @@
 std::shared_ptr<Camera> Assignment8::CreateCamera() const
 {
     const glm::vec2 resolution = GetImageOutputResolution();
-    std::shared_ptr<Camera> camera = std::make_shared<PerspectiveCamera>(resolution.x / resolution.y, 26.6f);
+    std::shared_ptr<Camera> camera = std::make_shared<PerspectiveCamera>(resolution.x / resolution.y, 30.f);
     //Position is given by (left-right, front-back, top-bottom)
-    camera->SetPosition(glm::vec3(0.f, -4.5f, 1.93693f));
+    camera->SetPosition(glm::vec3(0.f, -4.2f, 1.93693f));
     camera->Rotate(glm::vec3(1.f, 0.f, 0.f), PI / 2.f);
-    camera->Rotate(glm::vec3(1.f, 0.f, 0.f), -13.f * PI / 180.f);
+    camera->Rotate(glm::vec3(1.f, 0.f, 0.f), -15.f * PI / 180.f);
     return camera;
 }
 
@@ -25,7 +25,7 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
 
     // Objects
     std::vector<std::shared_ptr<aiMaterial>> loadedMaterials;
-    std::vector<std::shared_ptr<MeshObject>> cubeObjects = MeshLoader::LoadMesh("final_scene/cornell_empty.obj", &loadedMaterials);
+    std::vector<std::shared_ptr<MeshObject>> cubeObjects = MeshLoader::LoadMesh("final_scene/cornell_physics.obj", &loadedMaterials);
     std::cout<<cubeObjects.size()<<std::endl;
     for (size_t i = 0; i < cubeObjects.size(); ++i) {
         std::shared_ptr<Material> materialCopy = cubeMaterial->Clone();
@@ -70,18 +70,20 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
     pointLight2->SetPosition(glm::vec3(-0.2f, -1.6f, 1.f)); // Slightly change to light positions
     pointLight2->SetLightColor(glm::vec3(1.f, 1.f, 1.f));
     
-    std::shared_ptr<AreaLight> areaLight = std::make_shared<AreaLight>(glm::vec2(1.f,1.f));
+    std::shared_ptr<AreaLight> areaLight = std::make_shared<AreaLight>(glm::vec2(2.f,2.f));
     // Keep the area light size at 1, 1 and the sampler attributes at 1, 1. Then any settings in Blender
     // will apply here.
-    areaLight->SetPosition(glm::vec3(0.f, 0.f, 1.95f));
+    areaLight->SetPosition(glm::vec3(0.f, 0.f, 1.9f));
     //areaLight->Rotate(glm::vec3(1.f, 0.f, 0.f), 90 * (PI / 180.f));
     //areaLight->Rotate(glm::vec3(0.f, 0.f, 1.f), 65 * (PI / 180.f));
     areaLight->SetLightColor(glm::vec3(1.f, 1.0f, 1.0f));
     areaLight->SetSamplerAttributes(glm::ivec3(1.f, 1.f, 1.f), AREA_LIGHT_SAMPLES);
     
-    //newScene->AddLight(pointLight);
-    //newScene->AddLight(pointLight2);
+    newScene->AddLight(pointLight);
+    newScene->AddLight(pointLight2);
+#if AREA_LIGHT == 1
     newScene->AddLight(areaLight);
+#endif
 
     // -------------------------------
     // Change the type of acceleration.
