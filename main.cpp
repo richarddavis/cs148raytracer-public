@@ -1,4 +1,5 @@
 #include "common/RayTracer.h"
+#include <string>
 
 #define ASSIGNMENT 8
 #if ASSIGNMENT == 5
@@ -23,11 +24,21 @@
 
 int main(int argc, char** argv)  
 {
+    std::vector <std::string> coords;
+    std::string filename = "_full";
+    if (argc == 5) {
+        for (int i = 1; i < argc; ++i) {
+            coords.push_back(argv[i]);
+        }
+        filename = std::string("_") + argv[1] + std::string("_") + argv[2];
+    }
+    
     std::unique_ptr<APPLICATION> currentApplication = make_unique<APPLICATION>();
+    currentApplication->SetOutputFilename("output" + filename + ".png");
     RayTracer rayTracer(std::move(currentApplication));
 
     DIAGNOSTICS_TIMER(timer, "Ray Tracer");
-    rayTracer.Run();
+    rayTracer.Run(coords);
     DIAGNOSTICS_END_TIMER(timer);
 
     DIAGNOSTICS_PRINT();

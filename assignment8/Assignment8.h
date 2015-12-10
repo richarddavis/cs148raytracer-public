@@ -14,4 +14,8 @@ public:
     virtual int GetMaxReflectionBounces() const override;
     virtual int GetMaxRefractionBounces() const override;
     virtual glm::vec2 GetImageOutputResolution() const override;
+    virtual std::string GetOutputFilename() const override;
+    void SetOutputFilename(std::string f);
+private:
+    std::string filename = "output.png";
 };

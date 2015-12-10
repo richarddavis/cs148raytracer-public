@@ -6,7 +6,11 @@ class RayTracer {
 public:
     RayTracer(std::unique_ptr<class Application> app);
 
-    void Run();
+    void Run(std::vector <std::string> coords);
 private:
     std::unique_ptr<class Application> storedApplication;
+    int x;
+    int y;
+    int w;
+    int h;
 };

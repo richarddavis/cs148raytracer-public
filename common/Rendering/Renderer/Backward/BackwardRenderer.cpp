@@ -72,25 +72,24 @@ glm::vec3 BackwardRenderer::ComputeSampleColor(const IntersectionState& intersec
                     //std::cout<<materialTransPerc<<std::endl;
                     //glm::vec3 transAttenuation = glm::vec3(1.f, 1.f, 1.f) - hitMaterial->GetBaseDiffuseReflection();
                     glm::vec3 transAttenuation = hitMaterial->GetBaseDiffuseReflection();
-                    //std::cout<<"Hit Material diffuse relfection is: "<<std::endl;
-                    //std::cout<<glm::to_string(transAttenuation)<<std::endl;
-                    transAttenuation = transAttenuation * materialTransPerc;
-                    //std::cout<<"Final attenuation is : "<<std::endl;
-                    //std::cout<<glm::to_string(transAttenuation)<<std::endl;
+//                    std::cout<<"Hit Material diffuse relfection is: "<<std::endl;
+//                    std::cout<<glm::to_string(transAttenuation)<<std::endl;
+                    transAttenuation = (1.f - transAttenuation) * (1.f - materialTransPerc);
+//                    std::cout<<"Final attenuation is : "<<std::endl;
+//                    std::cout<<glm::to_string(transAttenuation)<<std::endl;
                     //dim += (float)(1/(MAX_TRANSMIT));
                     
                     glm::vec3 col1 = glm::vec3(transAttenuation[0], 0.f, 0.f);
                     glm::vec3 col2 = glm::vec3(0.f, transAttenuation[1], 0.f);
                     glm::vec3 col3 = glm::vec3(0.f, 0.f, transAttenuation[2]);
                     glm::mat3 transMatrix = glm::mat3(col1, col2, col3);
-                    localLightColor = transMatrix * light->GetLightColor();
-                    //std::cout<<"Original light color is :"<<std::endl;
-                    //std::cout<<glm::to_string(light->GetLightColor())<<std::endl;
-                    //std::cout<<"FINAL Diffuse color is :"<<std::endl;
-                    //std::cout<<glm::to_string(localLightColor)<<std::endl;
-                    //std::cout<<"Transformation matrix is :"<<std::endl;
-                    //std::cout<<glm::to_string(transMatrix)<<std::endl;
-                    
+                    localLightColor = transMatrix * localLightColor;
+//                    std::cout<<"Original light color is :"<<std::endl;
+//                    std::cout<<glm::to_string(light->GetLightColor())<<std::endl;
+//                    std::cout<<"FINAL Diffuse color is :"<<std::endl;
+//                    std::cout<<glm::to_string(localLightColor)<<std::endl;
+//                    std::cout<<"Transformation matrix is :"<<std::endl;
+//                    std::cout<<glm::to_string(transMatrix)<<std::endl;
                     hitOpaque++;
                 } else {
                     hitOpaque = MAX_TRANSMIT;
@@ -98,6 +97,7 @@ glm::vec3 BackwardRenderer::ComputeSampleColor(const IntersectionState& intersec
                 }
             }
             //std::cout<<"Broke out of loop."<<std::endl;
+            //std::cout<<"------------------"<<std::endl;
             if (hitOpaque == MAX_TRANSMIT) {
                 continue;
             }

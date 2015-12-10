@@ -14,8 +14,21 @@ RayTracer::RayTracer(std::unique_ptr<class Application> app):
 {
 }
 
-void RayTracer::Run()
+void RayTracer::Run(std::vector <std::string> coords)
 {
+    bool fragment = false;
+    x = 0;
+    y = 0;
+    w = 0;
+    h = 0;
+    if (coords.size() == 4) {
+        x = std::stoi(coords[0]);
+        y = std::stoi(coords[1]);
+        w = std::stoi(coords[2]);
+        h = std::stoi(coords[3]);
+        fragment = true;
+    }
+    
     // Scene Setup -- Generate the camera and scene.
     std::shared_ptr<Camera> currentCamera = storedApplication->CreateCamera();
     std::shared_ptr<Scene> currentScene = storedApplication->CreateScene();
@@ -40,9 +53,22 @@ void RayTracer::Run()
     const int maxSamplesPerPixel = storedApplication->GetSamplesPerPixel();
     assert(maxSamplesPerPixel >= 1);
     
-    #pragma omp parallel for num_threads(3)
-    for (int r = 0; r < static_cast<int>(currentResolution.y); ++r) {
-        for (int c = 0; c < static_cast<int>(currentResolution.x); ++c) {
+    if (fragment == true) {
+        if (y + h > currentResolution.y) {
+            h = currentResolution.y - h;
+        }
+        if (x + w > currentResolution.x) {
+            w = currentResolution.x - w;
+        }
+    } else {
+        x = 0;
+        y = 0;
+        w = currentResolution.x;
+        h = currentResolution.y;
+    }
+    
+    for (int r = y; r < (y+h); ++r) {
+        for (int c = x; c < (x+w); ++c) {
             imageWriter.SetPixelColor(currentSampler->ComputeSamplesAndColor(maxSamplesPerPixel, 2, [&](glm::vec3 inputSample) {
                 const glm::vec3 minRange(-0.5f, -0.5f, 0.f);
                 const glm::vec3 maxRange(0.5f, 0.5f, 0.f);

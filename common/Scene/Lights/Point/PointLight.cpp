@@ -18,19 +18,15 @@ float PointLight::ComputeLightAttenuation(glm::vec3 origin) const
 
 void PointLight::GenerateRandomPhotonRay(Ray& ray) const
 {
-    // Assignment 7 TODO: Fill in the random point light samples here.
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(-1, 1);
     
-    float rx = dis(gen);
-    float ry = dis(gen);
-    float rz = dis(gen);
+    float rx = -1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(2.f)));
+    float ry = -1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(2.f)));
+    float rz = -1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(2.f)));
 
     while ((pow(rx, 2) + pow(ry, 2) + pow(rz, 2)) > 1) {
-        rx = dis(gen);
-        ry = dis(gen);
-        rz = dis(gen);
+        rx = -1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(2.f)));
+        ry = -1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(2.f)));
+        rz = -1 + static_cast <float> (rand()) /( static_cast <float> (RAND_MAX/(2.f)));
     }
     
     const glm::vec3 dirVector = glm::vec3(rx, ry, rz);

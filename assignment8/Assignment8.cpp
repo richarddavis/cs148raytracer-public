@@ -25,16 +25,16 @@ std::shared_ptr<Scene> Assignment8::CreateScene() const
 
     // Objects
     std::vector<std::shared_ptr<aiMaterial>> loadedMaterials;
-    std::vector<std::shared_ptr<MeshObject>> cubeObjects = MeshLoader::LoadMesh("final_scene/cornell_physics.obj", &loadedMaterials);
-    std::cout<<cubeObjects.size()<<std::endl;
+    std::vector<std::shared_ptr<MeshObject>> cubeObjects = MeshLoader::LoadMesh("final_scene/cornell_physics_temp.obj", &loadedMaterials);
+    //std::cout<<cubeObjects.size()<<std::endl;
     for (size_t i = 0; i < cubeObjects.size(); ++i) {
         std::shared_ptr<Material> materialCopy = cubeMaterial->Clone();
         materialCopy->LoadMaterialFromAssimp(loadedMaterials[i]);
 #if MATERIAL_HACK == 1
         // Make sure to use the index in the obj file, not the mtl file
         if (i == 2) {
-            materialCopy->SetTransmittance(0.3f);
-            materialCopy->SetIOR(1.0f);
+            //materialCopy->SetTransmittance(0.3f);
+            //materialCopy->SetIOR(1.0f);
             materialCopy->SetReflectivity(0.2f);
         }
 #endif
@@ -164,4 +164,12 @@ glm::vec2 Assignment8::GetImageOutputResolution() const
 {
 //    return glm::vec2(960.f, 720.f);
     return glm::vec2(640.f, 480.f);
+}
+
+std::string Assignment8::GetOutputFilename() const {
+    return filename;
+}
+
+void Assignment8::SetOutputFilename(std::string f) {
+    filename = f;
 }

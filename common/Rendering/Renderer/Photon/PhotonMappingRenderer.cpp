@@ -132,10 +132,13 @@ void PhotonMappingRenderer::TracePhoton(PhotonKdtree& photonMap, Ray* photonRay,
     glm::vec3 diffuseColor = hitMaterial->GetBaseDiffuseReflection();
     //std::cout<<glm::to_string(diffuseColor)<<std::endl;
     
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(0, 1);
-    float pr = dis(gen);
+    // Generate a random number between 0 and 1 inclusive
+    float pr = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+        
+    //std::random_device rd;
+    //std::mt19937 gen(rd());
+    //std::uniform_real_distribution<> dis(0, 1);
+    //float pr = dis(gen);
     
     if (diffuseColor[0] < pr || diffuseColor[1] < pr || diffuseColor[2] < pr) {
         Ray newRay = GenerateRandomRay(state);
@@ -242,12 +245,15 @@ void PhotonMappingRenderer::SetNumberOfDiffusePhotons(int diffuse)
 }
 
 Ray PhotonMappingRenderer::GenerateRandomRay(IntersectionState state) const {
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_real_distribution<> dis(0, 1);
-        
-    double u1 = dis(gen);
-    double u2 = dis(gen);
+//    std::random_device rd;
+//    std::mt19937 gen(rd());
+//    std::uniform_real_distribution<> dis(0, 1);
+//        
+//    double u1 = dis(gen);
+//    double u2 = dis(gen);
+    double u1 = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+    double u2 = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+    
     double r = sqrt(u1);
     double theta = 2 * PI * u2;
     double x = r * cos(theta);
